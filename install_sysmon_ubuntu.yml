@@ -1,0 +1,48 @@
+---
+- name: Install sysmonforlinux
+  hosts: ubuntu_servers
+  become: yes
+  tasks:
+    - name: Determine the Ubuntu version
+      set_fact:
+        ubuntu_version: "{{ {
+          'focal': '20.04',
+          'hirsute': '21.04',
+          'impish': '21.10',
+          'jammy': '22.04',
+          'kinetic kudu': '22.10'
+          }[ansible_distribution_release] }}"
+      when: ansible_distribution_release in ['focal', 'hirsute', 'impish', 'jammy']
+
+    - name: Check if the Microsoft repo package is already downloaded
+      stat:
+        path: "/tmp/packages-microsoft-prod-{{ ubuntu_version }}.deb"
+      register: package_file
+
+    - name: Check if the Microsoft repo package is already installed
+      command: dpkg-query -l packages-microsoft-prod
+      register: dpkg_status
+      ignore_errors: yes
+
+    - name: Download the Microsoft repo package
+      get_url:
+        url: "https://packages.microsoft.com/config/ubuntu/{{ ubuntu_version }}/packages-microsoft-prod.deb"
+        dest: "/tmp/packages-microsoft-prod-{{ ubuntu_version }}.deb"
+        validate_certs: no
+      when: not package_file.stat.exists
+
+    - name: Install the Microsoft repo package
+      command: dpkg -i "/tmp/packages-microsoft-prod-{{ ubuntu_version }}.deb"
+      when: not dpkg_status.failed
+
+    - name: Update APT cache
+      apt:
+        update_cache: yes
+      when: not dpkg_status.changed
+
+    - name: Install sysmonforlinux
+      apt:
+        name: sysmonforlinux
+        state: present
+      when: not dpkg_status.changed
+

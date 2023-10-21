@@ -1,0 +1,52 @@
+---
+- name: Install Wazuh Agent
+  hosts: ubuntu_servers
+  become: yes
+
+  vars:
+    deb_package_path: /home/update/wazuh-agent.deb
+
+  tasks:
+    - name: Check if Wazuh Agent is installed
+      systemd:
+        name: wazuh-agent
+      ignore_errors: yes
+      register: wazuh_agent_status
+
+    - name: Capture the remote host's hostname
+      command: hostname
+      register: hostname_result
+      changed_when: false
+      check_mode: no
+
+    - name: Download Wazuh Agent deb package
+      get_url:
+        url: https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.5.3-1_amd64.deb
+        dest: "{{ deb_package_path }}"
+        mode: 0644
+      register: download_result
+
+    - name: Install Wazuh Agent
+      command: >
+        dpkg -i "{{ deb_package_path }}"
+      tags:
+        - install
+      when: wazuh_agent_status.changed | default(false)
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+      tags:
+        - systemd
+      when: wazuh_agent_status.changed | default(false)
+
+    - name: Enable Wazuh Agent service
+      command: systemctl enable wazuh-agent
+      tags:
+        - systemd
+      when: wazuh_agent_status.changed | default(false)
+
+    - name: Start Wazuh Agent service
+      command: systemctl start wazuh-agent
+      tags:
+        - systemd
+      when: wazuh_agent_status.changed | default(false)

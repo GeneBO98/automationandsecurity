@@ -1,0 +1,44 @@
+---
+- name: Install sysmonforlinux
+  hosts: debian_servers
+  become: yes
+  tasks:
+    - name: Download Microsoft GPG key
+      shell: wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/microsoft.asc.gpg
+      args:
+        creates: /tmp/microsoft.asc.gpg
+
+    - name: Move Microsoft GPG key to /etc/apt/trusted.gpg.d/
+      command: mv /tmp/microsoft.asc.gpg /etc/apt/trusted.gpg.d/
+      args:
+        creates: /etc/apt/trusted.gpg.d/microsoft.asc.gpg
+
+    - name: Create Microsoft repository configuration
+      blockinfile:
+        path: /etc/apt/sources.list.d/microsoft-prod.list
+        block: |
+          deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/debian/11/prod bullseye main
+
+    - name: Set ownership of the Microsoft GPG key
+      file:
+        path: /etc/apt/trusted.gpg.d/microsoft.asc.gpg
+        owner: root
+        group: root
+
+    - name: Update APT cache
+      apt:
+        update_cache: yes
+
+    - name: Install apt-transport-https
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Update APT cache after installing apt-transport-https
+      apt:
+        update_cache: yes
+
+    - name: Install sysmonforlinux
+      apt:
+        name: sysmonforlinux
+        state: present
