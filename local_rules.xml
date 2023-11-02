@@ -1,0 +1,73 @@
+<!-- Local rules -->
+
+<!-- Modify it at your will. -->
+<!-- Copyright (C) 2015, Wazuh Inc. -->
+
+<!-- Example -->
+<group name="local,syslog,sshd,">
+
+  <!--
+  Dec 10 01:02:02 host sshd[1234]: Failed none for root from 1.1.1.1 port 1066 ssh2
+  -->
+  <rule id="100001" level="5">
+    <if_sid>5716</if_sid>
+    <srcip>1.1.1.1</srcip>
+    <description>sshd: authentication failed from IP 1.1.1.1.</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+
+</group>
+<group name="local">
+  <rule id="510" level="6" overwrite="yes">
+    <if_sid>509</if_sid>
+    <description>Host-based anomaly detection event (rootcheck).</description>
+    <group>rootcheck,pci_dss_10.6.1,gdpr_IV_35.7.d,</group>
+    <!-- <if_fts />  -->
+  </rule>
+</group>
+
+<group name="local,malware,">
+  <rule id="100002" level="5">
+    <if_sid>554</if_sid>
+    <list field="md5" lookup="match_key">etc/lists/malware-hashes</list>
+    <description>A file - $(file) - in the malware blacklist was added to the system.</description>
+  </rule>
+
+  <rule id="100003" level="5">
+    <if_sid>100002</if_sid>
+    <field name="file" type="pcre2">(?i)[c-z]:</field>
+    <description>A file - $(file) - in the malware blacklist was added to the system.</description>
+  </rule>
+  <rule id="100004" level="7">
+    <if_sid>657</if_sid>
+    <match>Successfully removed threat</match>
+    <description>$(parameters.program): Successfully removed threat $(parameters.alert.syscheck.path) whose MD5 hash appears in a malware blacklist.</description>
+  </rule>
+  <rule id="100005" level="7">
+    <if_sid>657</if_sid>
+    <match>Error removing threat</match>
+    <description>$(parameters.program): Error removing threat $(parameters.alert.syscheck.path) whose MD5 hash appears in a malware blacklist.</description>
+  </rule>
+</group>
+
+<group name="local">
+  <rule id="92058" level="11" overwrite="yes">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.originalFileName" type="pcre2">(?i)sdbinst\.EXE</field>
+    <options>no_full_log</options>
+    <description>Application Compatibility Database launched</description>
+    <mitre>
+      <id>T1546.011</id>
+    </mitre>
+  </rule>
+  <rule id="92213" level="15" overwrite="yes">
+    <if_group>sysmon_event_11</if_group>
+      <field name="win.eventdata.targetFilename" type="pcre2">(?i)[c-z]:\\\\Users\\\\.+\\\\AppData\\\\Local\\\\Temp\\\\(?!DismHost\.exe)[^\\]+\. (exe|com|dll|vbs|js|bat|cmd|pif|wsh|ps1|msi|vbe)</field>
+      <options>no_full_log</options>
+      <description>Executable file dropped in folder commonly used by malware</description>
+      <mitre>
+        <id>T1105</id>
+      </mitre>
+  </rule>
+</group>
+
