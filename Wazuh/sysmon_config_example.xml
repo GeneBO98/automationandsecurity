@@ -1,0 +1,19 @@
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>md5,sha256</HashAlgorithms>
+  <EventFiltering>
+  <!-- Event ID: 2 FileCreateTime -->
+    <FileCreateTime onmatch="exclude">
+    <Image condition="end with">chrome.exe</Image>
+    <Image condition="end with">firefox.exe</Image>
+    <Image condition="end with">outlook.exe</Image>
+    <Image condition="end with">iexplore.exe</Image>
+    <Image condition="end with">brave.exe</Image>
+    <Image condition="end with">sdbinst.exe</Image>
+    <Image condition="end with">cleanmgr.exe</Image>
+    <Image condition="end with">Sysmon.exe</Image>
+    <Image condition="contains">C:\Windows\system32\msiexec.exe</Image>
+    <Image condition="contains">C:\Windows\syswow64\MsiExec.exe</Image>
+    </FileCreateTime>
+    <!-- Additional rules and configurations go here -->
+  </EventFiltering>
+</Sysmon>
